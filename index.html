@@ -26,9 +26,18 @@ button:disabled{opacity:.55;cursor:not-allowed}
 select,input[type="text"]{padding:8px;border-radius:8px;border:1px solid #d6e6f6}
 footer{margin-top:12px;display:flex;gap:8px}
 .controls{display:flex;gap:8px;align-items:center}
-.mcq button{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
-.tag{background:#eef5fb;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--accent);display:inline-block}
-kbd{background:#eef; padding:2px 6px; border-radius:6px; font-size:12px}
+.mcq button{
+  display:block;
+  width:100%;
+  text-align:left;
+  margin:6px 0;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #e6eef6;
+  background:#fff;
+  color:#0b2540;   /* <-- this makes the answer text visible */
+  font-size:14px;
+}
 .dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.28);padding:20px}
 .dialog .card{max-width:720px;background:#fff;border-radius:12px;padding:18px}
 .editor{font-family:monospace;font-size:12px;height:100px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed #d7e9fb;background:#fcfeff}
