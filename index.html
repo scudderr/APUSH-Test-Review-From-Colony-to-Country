@@ -17,6 +17,7 @@ h1{font-size:20px;margin:0}
 .modes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 button,.pill{background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
 button.secondary{background:#e6eef6;color:#0b2540}
+button:disabled{opacity:.55;cursor:not-allowed}
 .chat{height:62vh;overflow:auto;padding:12px;border-radius:8px;background:linear-gradient(180deg,#eef7ff,transparent)}
 .msg{margin:8px 0;max-width:78%}
 .bot{background:#fff;padding:10px;border-radius:10px}
@@ -26,13 +27,11 @@ select,input[type="text"]{padding:8px;border-radius:8px;border:1px solid #d6e6f6
 footer{margin-top:12px;display:flex;gap:8px}
 .controls{display:flex;gap:8px;align-items:center}
 .mcq button{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
-.correct{border-color:green;background:#e9fff0}
-.wrong{border-color:red;background:#fff0f0}
 .tag{background:#eef5fb;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--accent);display:inline-block}
 kbd{background:#eef; padding:2px 6px; border-radius:6px; font-size:12px}
 .dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.28);padding:20px}
 .dialog .card{max-width:720px;background:#fff;border-radius:12px;padding:18px}
-.editor{font-family:monospace;font-size:12px;height:120px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed #d7e9fb;background:#fcfeff}
+.editor{font-family:monospace;font-size:12px;height:100px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed #d7e9fb;background:#fcfeff}
 </style>
 </head>
 <body>
@@ -64,20 +63,21 @@ kbd{background:#eef; padding:2px 6px; border-radius:6px; font-size:12px}
         <select id="topicSelect" style="width:100%;margin-top:6px"></select>
       </div>
 
-      <div style="margin-top:12px;display:flex;gap:8px">
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button id="nextBtn">Next</button>
         <button id="showAnsBtn">Show Answer</button>
+        <button id="hintBtn" class="secondary">Hint</button>
         <button id="resetBtn" class="secondary">Reset</button>
       </div>
 
       <div style="margin-top:12px">
         <div class="small">Study data (read-only preview)</div>
-        <div id="studyPreview" class="editor" style="height:100px"></div>
-        <div class="small" style="margin-top:6px">To customize later, ask your assistant to generate an editable JSON block and paste it here in a future version.</div>
+        <div id="studyPreview" class="editor"></div>
+        <div class="small" style="margin-top:6px">Want to customize later? I can generate an editable JSON you can paste here in a future version.</div>
       </div>
 
       <div class="small" style="margin-top:10px;line-height:1.4">
-        Tips: <kbd>Next</kbd> shows the next card/question. <kbd>Show Answer</kbd> reveals the answer/explanation. In Short Answer, type 2–4 concise sentences.
+        Tips: <kbd>Next</kbd> shows the next card/question. <kbd>Show Answer</kbd> reveals flashcard answers. In MCQs, feedback appears immediately.
       </div>
     </div>
 
@@ -100,10 +100,10 @@ kbd{background:#eef; padding:2px 6px; border-radius:6px; font-size:12px}
   <div class="card">
     <h3 id="helpTitle" style="margin:0 0 8px">How to use this page</h3>
     <ol style="margin:0 0 10px 18px;line-height:1.5">
-      <li><b>Flashcards</b>: Press <kbd>Next</kbd> for a term; <kbd>Show Answer</kbd> to reveal the definition + significance.</li>
-      <li><b>AP-style MCQ</b>: Press <kbd>Next</kbd>, pick A–E, get instant feedback and a short explanation.</li>
+      <li><b>Flashcards</b>: Press <kbd>Next</kbd> for a term; <kbd>Hint</kbd> for a clue; <kbd>Show Answer</kbd> to reveal details.</li>
+      <li><b>AP-style MCQ</b>: Press <kbd>Next</kbd>, pick A–E → instant feedback and brief explanation. Use <kbd>Hint</kbd> first if you want a nudge.</li>
       <li><b>Short Answer</b>: Press <kbd>Next</kbd> for a prompt; reply in 2–4 sentences. I’ll nudge with key points.</li>
-      <li><b>Ask the Bot</b>: Switch to Ask mode, type a question (e.g., “Why did Britain tax the colonies?”). I’ll answer briefly using this study bank.</li>
+      <li><b>Ask the Bot</b>: Type a question (e.g., “Why did Britain tax the colonies?”). I’ll answer briefly using this study bank.</li>
       <li>Use the <b>Topic</b> menu to focus on a unit.</li>
     </ol>
     <div class="small">Built for concise practice. For deeper reading, see your AMSCO text and class notes.</div>
@@ -129,17 +129,17 @@ const studyData = {
  summary:"Spanish vs. British goals, Columbian Exchange, early settlements (Jamestown, Plymouth, Mass. Bay), key compacts and labor systems.",
  flashcards:[
   {q:"Columbian Exchange",a:"Two-way transfer of plants, animals, peoples (including enslaved Africans), microbes, and ideas between the Old and New Worlds after 1492; it reshaped diets, populations, and ecosystems."},
-  {q:"Spanish vs. English Colonization",a:"Spanish: crown-directed conquest, encomienda, conversion, extraction of wealth. English: mix of joint-stock/private ventures, settler colonies, more local self-rule and diverse economies."},
-  {q:"Encomienda System",a:"Spanish labor system granting colonists authority over Indigenous labor/tribute in return for 'protection' and Christianization; often abusive, replaced gradually by repartimiento and enslaved labor."},
+  {q:"Spanish vs. English Colonization",a:"Spanish: crown-directed conquest, encomienda, conversion, extraction of wealth. English: joint-stock/private ventures, settler colonies, local self-rule, diverse economies."},
+  {q:"Encomienda System",a:"Spanish labor system granting colonists authority over Indigenous labor/tribute in return for 'protection' and Christianization; often abusive."},
   {q:"Joint Stock Company",a:"Investment vehicle pooling capital/risk for colonial ventures (e.g., Virginia Company); enabled costly settlement attempts without sole crown financing."},
-  {q:"Jamestown (1607)",a:"First permanent English settlement; early starvation/disease, later stabilized with tobacco economy and House of Burgesses (1619)."},
+  {q:"Jamestown (1607)",a:"First permanent English settlement; early starvation/disease, later stabilized with tobacco economy and the House of Burgesses (1619)."},
   {q:"John Smith",a:"Soldier-leader who imposed discipline ('he that will not work, shall not eat') and improved Jamestown’s survival in 1608–09."},
   {q:"Plymouth Separatists",a:"English Separatists (Pilgrims) seeking religious freedom; established Plymouth (1620) with Mayflower Compact; modest growth, later absorbed by MBC."},
   {q:"Mayflower Compact",a:"Agreement by Plymouth settlers to form a civil body politic and obey laws for the common good; an early step toward self-government."},
   {q:"Massachusetts Bay Puritans",a:"Non-separating Puritans (1630) under John Winthrop; aimed to build a godly 'city upon a hill' with congregational churches and town meetings."},
-  {q:"Great Awakening (1730s–40s)",a:"Intercolonial religious revival (Edwards, Whitefield) stressing conversion experience and emotional piety; fostered new/old light split and challenged authority."},
+  {q:"Great Awakening (1730s–40s)",a:"Intercolonial religious revival (Edwards, Whitefield) stressing conversion experience; fostered new/old light split and challenged authority."},
   {q:"Dominion of New England (1686–89)",a:"Crown consolidation of NE colonies under Andros to curb smuggling and assert control; collapsed after the Glorious Revolution."},
-  {q:"Salutary Neglect",a:"Long period of lax enforcement of imperial trade laws; allowed colonial self-rule to develop until tighter control after 1763."},
+  {q:"Salutary Neglect",a:"Lax enforcement of imperial trade laws; allowed colonial self-rule to develop until tighter control after 1763."},
   {q:"Navigation Acts",a:"Mercantilist trade laws directing colonial commerce through England on English ships; often evaded via smuggling."},
   {q:"House of Burgesses",a:"Elected assembly in Virginia (1619); early example of English representative government in America."},
   {q:"Town Meetings",a:"Local direct-democracy tradition in New England; citizens debated taxes, local laws, and governance."}
@@ -191,9 +191,9 @@ const studyData = {
   {q:"Salem Witchcraft Trials (1692)",a:"Mass hysteria in Massachusetts; reflect social/religious tensions; led to skepticism of spectral evidence."},
   {q:"Triangular Trade",a:"Transatlantic exchange linking Europe, Africa, and the Americas; included enslaved people, raw materials, and manufactured goods."},
   {q:"Mercantilism",a:"Economic theory: colonies supply raw materials and buy finished goods; aim to accumulate wealth and favorable balance of trade."},
-  {q:"Act of Toleration (MD, 1649)",a:"Protected Trinitarian Christians in Maryland; an early experiment in limited religious toleration."},
+  {q:"Act of Toleration (MD, 1649)",a:"Protected Trinitarian Christians; an early experiment in limited religious toleration."},
   {q:"Quakers in Pennsylvania",a:"Pacifist, egalitarian sect; founded by William Penn; promoted tolerance and fair dealings with Natives."},
-  {q:"Great Awakening (recap)",a:"Revival movement emphasizing personal conversion; reshaped colonial religious landscape."}
+  {q:"Great Awakening (recap)",a:"Revival emphasizing personal conversion; reshaped the colonial religious landscape."}
  ],
  mcqs:[
   {q:"Which region relied most on enslaved labor by the mid-1700s?",
@@ -310,7 +310,7 @@ const studyData = {
   {q:"Battle of Saratoga (1777)",a:"Turning point; American victory secured French alliance."},
   {q:"Yorktown (1781)",a:"Combined Franco-American victory leading to British surrender of a major army under Cornwallis."},
   {q:"Treaty of Paris (1783)",a:"Recognized U.S. independence; established boundaries to the Mississippi; addressed Loyalist claims and debts."},
-  {q:"Why colonists succeeded",a:"Home-field advantage, resilient political leadership, French aid, and British war weariness/logistical strain."},
+  {q:"Why colonists succeeded",a:"Home-field advantage, resilient leadership, French aid, and British logistical strain/war weariness."},
   {q:"British vs. Colonial Advantages",a:"Britain: navy, wealth, professional army. Colonists: leadership, defensive war, motivation, alliance potential."},
   {q:"Committees of Correspondence (recap)",a:"Kept resistance coordinated; built an intercolonial network before and during war."},
   {q:"Samuel Adams",a:"Patriot organizer and propagandist; key role in Committees and Boston resistance."},
@@ -327,7 +327,7 @@ const studyData = {
    choices:["French naval blockade and coordinated siege","A winter storm alone","British civil war","Canadian intervention","Spanish army leadership"],
    answer:0, expl:"The French fleet bottled up Cornwallis while allied forces besieged."},
   {q:"The Treaty of Paris (1783) did NOT",
-   choices:["Recognize U.S. independence","Set the Mississippi as a western boundary","Address Loyalist debts/claims","Grant U.S. Canada","Acknowledge American fishing rights (off Newfoundland)"],
+   choices:["Recognize U.S. independence","Set the Mississippi as a western boundary","Address Loyalist debts/claims","Grant U.S. Canada","Acknowledge American fishing rights"],
    answer:3, expl:"Canada remained British."},
   {q:"Which factor most undermined British success?",
    choices:["Unlimited support at home","Short supply lines","Logistical challenges, divided support at home, and vast distances","Unified British political strategy","Abundant loyalist recruitment everywhere"],
@@ -363,7 +363,7 @@ const studyData = {
   {q:"Three-Fifths Compromise",a:"Counted enslaved persons as 3/5 for representation and taxation; entrenched sectional tensions."},
   {q:"Commerce/Slave Trade Compromise",a:"Allowed Congress to regulate commerce (no export taxes) and delayed any ban on the slave trade until 1808."},
   {q:"Federalists vs. Anti-Federalists",a:"Federalists favored a stronger national government; Anti-Federalists feared centralized power and demanded a bill of rights."},
-  {q:"Key Ratification States (VA, MA, NY)",a:"Large/populous states whose support was crucial to legitimacy; won over by promised amendments/BoR."},
+  {q:"Key Ratification States (VA, MA, NY)",a:"Large/populous states whose support was crucial; won over by promised amendments/BoR."},
   {q:"Bill of Rights (1791)",a:"First ten amendments protecting civil liberties (speech, press, religion, due process, etc.); helped secure ratification."},
   {q:"Federalist Papers",a:"Essays (Hamilton, Madison, Jay) arguing for ratification; explained checks, balances, and extended republic."}
  ],
@@ -428,7 +428,7 @@ const terms = {
 };
 
 /* ============================
-   UI Logic
+   UI Logic + Hint button behavior
    ============================ */
 const chat = document.getElementById('chatArea');
 const userInput = document.getElementById('userInput');
@@ -445,6 +445,7 @@ const studyPreview = document.getElementById('studyPreview');
 const helpBtn = document.getElementById('helpBtn');
 const helpDlg = document.getElementById('helpDlg');
 const helpClose = document.getElementById('helpClose');
+const hintBtn = document.getElementById('hintBtn');
 
 let mode = 'flash';
 let currentTopicId = studyData.topics[0].id;
@@ -474,56 +475,46 @@ function setPreview(){
   const meta = studyData.topics.map(t=>({topic:t.title, flashcards:t.flashcards.length, mcqs:t.mcqs.length}));
   studyPreview.textContent = JSON.stringify(meta,null,2);
 }
-
-modeFlash.onclick = ()=>{ mode='flash'; index=0; appendMsg("Flashcards ready. Press <b>Next</b> for a term and <b>Show Answer</b> to reveal details.",'bot'); }
-modeMcq.onclick = ()=>{ mode='mcq'; index=0; appendMsg("AP-style MCQs loaded. Press <b>Next</b> and choose an answer for instant feedback.",'bot'); }
-modeShort.onclick = ()=>{ mode='short'; index=0; appendMsg("Short answers: I’ll prompt; you reply in 2–4 concise sentences.",'bot'); }
-modeAsk.onclick = ()=>{ mode='ask'; appendMsg("Ask mode: type a question (e.g., “Why did Britain tax the colonies?”). I’ll answer briefly from this study bank.",'bot'); }
-
-topicSelect.onchange = ()=>{ currentTopicId = topicSelect.value; index=0; appendMsg("Topic set to: <b>"+ studyData.topics.find(t=>t.id===currentTopicId).title+"</b>",'bot'); }
-
-nextBtn.onclick = ()=>{
-  const topic = studyData.topics.find(t=>t.id===currentTopicId);
-  if(!topic){ appendMsg("Pick a topic first.",'bot'); return; }
-  if(mode==='flash') showFlash(topic);
-  else if(mode==='mcq') showMCQ(topic);
-  else if(mode==='short') showShort();
-  else appendMsg("In Ask mode, type your question below and press <b>Send</b>.",'bot');
+function updateHintState(){
+  // Enable hint only when a flashcard or MCQ is currently active
+  const enabled = !!(lastFlash || lastMCQ);
+  hintBtn.disabled = !enabled;
+}
+function clearCurrent(){
+  lastFlash = null; lastMCQ = null; lastShort = null;
+  updateHintState();
 }
 
-showAnsBtn.onclick = ()=>{
-  const topic = studyData.topics.find(t=>t.id===currentTopicId);
-  if(mode==='flash' && lastFlash){ appendMsg("<b>Answer:</b> "+lastFlash.a,'bot'); }
-  else if(mode==='mcq' && lastMCQ){ appendMsg("<b>Answer:</b> " + String.fromCharCode(65+lastMCQ.answer) + ". " + lastMCQ.choices[lastMCQ.answer] + "<br><em>Why:</em> " + lastMCQ.expl,'bot'); }
-  else appendMsg("Nothing to show yet — press <b>Next</b> first.",'bot');
-}
-
-resetBtn.onclick = ()=>{ index=0; appendMsg("Reset complete. Choose a mode and press <b>Next</b>.",'bot'); }
-
-sendBtn.onclick = handleUser;
-userInput.addEventListener('keydown',e=>{ if(e.key==='Enter') handleUser(); });
-
-function handleUser(){
-  const text = userInput.value.trim(); if(!text) return;
-  appendMsg(escapeHtml(text),'user'); userInput.value='';
-  if(mode==='ask'){ return handleAsk(text); }
-  if(mode==='short'){ return gradeShortAnswer(text); }
-  appendMsg("Tip: use <b>Next</b> for the next item, or switch to Ask/Short Answer.",'bot');
-}
-
+/* -----------------------------
+   Flashcards (with hints)
+   ----------------------------- */
 function showFlash(topic){
-  if(!topic.flashcards.length){ appendMsg("No flashcards in this topic.",'bot'); return; }
+  if(!topic.flashcards.length){ appendMsg("No flashcards in this topic.",'bot'); clearCurrent(); return; }
   lastFlash = topic.flashcards[index % topic.flashcards.length];
-  appendMsg("<b>Flashcard</b><br>Term: "+escapeHtml(lastFlash.q),'bot');
+  lastMCQ = null; lastShort = null; updateHintState();
+  appendMsg("<b>Flashcard</b><br>Term: "+escapeHtml(lastFlash.q)+"<br><em>Use the Hint button if you want a nudge.</em>", 'bot');
   index++;
 }
+function showFlashAnswer(){
+  if(lastFlash) appendMsg("<b>Answer:</b> "+lastFlash.a,'bot');
+  updateHintState();
+}
+function flashHint(){
+  if(lastFlash){
+    const clue = lastFlash.a.split(/[.]/)[0]+"…";
+    appendMsg("💡 Hint: "+clue,'bot');
+  }
+}
+
+/* -----------------------------
+   MCQs — immediate feedback + hints
+   ----------------------------- */
 function showMCQ(topic){
-  if(!topic.mcqs.length){ appendMsg("No MCQs in this topic.",'bot'); return; }
-  const q = topic.mcqs[index % topic.mcqs.length]; lastMCQ = q; index++;
+  if(!topic.mcqs.length){ appendMsg("No MCQs in this topic.",'bot'); clearCurrent(); return; }
+  const q = topic.mcqs[index % topic.mcqs.length]; lastMCQ = q; lastFlash=null; lastShort=null; updateHintState(); index++;
   let html = "<b>AP-style MCQ</b><div style='margin-top:6px'><em>"+escapeHtml(q.q)+"</em></div>";
   q.choices.forEach((c,i)=>{ html += `<div class="mcq"><button data-i="${i}">${String.fromCharCode(65+i)}. ${escapeHtml(c)}</button></div>`; });
   appendMsg(html,'bot');
-  // delegate clicks
   setTimeout(()=>{
     const buttons = chat.querySelectorAll('button[data-i]');
     buttons.forEach(b=>{
@@ -535,45 +526,106 @@ function showMCQ(topic){
 function handleMCQAnswer(chosen,q){
   const correct = q.answer;
   if(chosen===correct){
-    appendMsg("<b>Correct.</b> "+escapeHtml(q.choices[correct])+" — "+escapeHtml(q.expl),'bot');
+    appendMsg("✅ <b>Correct.</b> "+escapeHtml(q.choices[correct])+" — "+escapeHtml(q.expl),'bot');
   } else {
-    appendMsg("Not quite — you chose <b>"+String.fromCharCode(65+chosen)+"</b>. Best answer is <b>"+String.fromCharCode(65+correct)+". "+escapeHtml(q.choices[correct])+"</b>. "+escapeHtml(q.expl),'bot');
+    appendMsg("❌ <b>Not quite.</b> Correct answer: <b>"+String.fromCharCode(65+correct)+". "+escapeHtml(q.choices[correct])+"</b><br><em>"+escapeHtml(q.expl)+"</em>",'bot');
+  }
+  // Keep lastMCQ for follow-up questions/hints
+  updateHintState();
+}
+function mcqHint(){
+  if(lastMCQ){
+    const clue = lastMCQ.expl.split(/[.]/)[0]+"…";
+    appendMsg("💡 Hint: "+clue,'bot');
   }
 }
 
+/* -----------------------------
+   Short Answer
+   ----------------------------- */
 function showShort(){
-  lastShort = shortPrompts[index % shortPrompts.length]; index++;
+  lastShort = shortPrompts[index % shortPrompts.length]; lastFlash=null; lastMCQ=null; updateHintState(); index++;
   appendMsg("<b>Short Answer Prompt</b><div style='margin-top:6px'>"+escapeHtml(lastShort)+"</div>",'bot');
 }
 function gradeShortAnswer(text){
   const lower = text.toLowerCase();
   let hits = 0;
-  if(lower.match(/tax|revenue|debt|finance/)) hits++;
-  if(lower.match(/weak central|no (power|ability) to tax|articles/)) hits++;
-  if(lower.match(/shays|rebellion|uprising/)) hits++;
-  if(lower.match(/natural rights|consent|republic|monarchy/)) hits++;
-  let msg = hits>=2
-   ? "Nice job — you included key ideas. For full credit, anchor with a concrete example (e.g., Shays’ Rebellion, no federal taxing power) and tie cause → effect."
-   : "You’re close. Mention specific causes/effects (e.g., war debts → taxes; Articles lacked taxing power → instability; Shays’ Rebellion showed weakness). Try again in 2–4 sentences.";
+  if(lower.match(/tax|revenue|debt/)) hits++;
+  if(lower.match(/articles|weak central/)) hits++;
+  if(lower.match(/shays/)) hits++;
+  if(lower.match(/natural rights|consent/)) hits++;
+  const msg = hits>=2
+   ? "Nice job — you included key ideas. For full credit, anchor with an example (e.g., Shays’ Rebellion, Articles lacking tax power)."
+   : "You're on the right track, but add concrete causes/effects (e.g., war debts → taxes; Articles’ weakness → unrest).";
   appendMsg(msg,'bot');
 }
 
+/* -----------------------------
+   Ask Mode (follow-ups welcome)
+   ----------------------------- */
 function handleAsk(text){
-  const q = text.toLowerCase();
-  // direct term match
+  const q = text.toLowerCase().trim();
+  if(q==="hint"){
+    if(lastFlash) return flashHint();
+    if(lastMCQ)   return mcqHint();
+  }
   for(const t in terms){ if(q.includes(t)){ appendMsg(terms[t],'bot'); return; } }
-  // fuzzy: search topic summaries/titles/flashcard terms
-  let best=null,scoreBest=0;
-  studyData.topics.forEach(t=>{
-    const blob = (t.summary+" "+t.title+" "+t.flashcards.map(f=>f.q+" "+f.a).join(" ")).toLowerCase();
-    let s=0; q.split(/\s+/).forEach(w=>{ if(w.length>3 && blob.includes(w)) s++; });
-    if(s>scoreBest){scoreBest=s; best=t;}
-  });
-  if(best && scoreBest>0){ appendMsg(best.summary+" If you’d like practice, switch to MCQ or Flashcards for this topic.",'bot'); }
-  else { appendMsg("I couldn’t find an exact match. Try asking about a specific term (e.g., 'Townshend Acts', 'Three-Fifths Compromise').",'bot'); }
+  // If a recent MCQ exists, offer an expanded cause→effect clarification
+  if(lastMCQ){
+    appendMsg("Think cause → effect: "+escapeHtml(lastMCQ.expl)+" If you’d like another angle, ask me to compare it to a similar policy.",'bot');
+    return;
+  }
+  if(lastFlash){
+    appendMsg("Here’s a bit more context: "+escapeHtml(lastFlash.a.split(/[.]/).slice(0,2).join(". "))+".",'bot');
+    return;
+  }
+  appendMsg("Good question — try specifying a term (e.g., 'Townshend Acts') or pick a topic and press <b>Next</b>.",'bot');
 }
 
-function escapeHtml(s){ return s.replace(/[&<>]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
+/* -----------------------------
+   Mode + Controls
+   ----------------------------- */
+modeFlash.onclick = ()=>{ mode='flash'; index=0; clearCurrent(); appendMsg("Flashcards ready. Press <b>Next</b> for a term.",'bot'); }
+modeMcq.onclick   = ()=>{ mode='mcq';   index=0; clearCurrent(); appendMsg("MCQs loaded. Press <b>Next</b> to start. Click <b>Hint</b> for a clue first if you like.",'bot'); }
+modeShort.onclick = ()=>{ mode='short'; index=0; clearCurrent(); appendMsg("Short answers: I’ll prompt; you reply in 2–4 sentences.",'bot'); }
+modeAsk.onclick   = ()=>{ mode='ask';              appendMsg("Ask mode: type a question or click <b>Hint</b> after a card/MCQ for a nudge.",'bot'); }
+
+topicSelect.onchange = ()=>{ currentTopicId = topicSelect.value; index=0; clearCurrent(); appendMsg("Topic set to: <b>"+ studyData.topics.find(t=>t.id===currentTopicId).title+"</b>",'bot'); }
+
+nextBtn.onclick = ()=>{
+  const topic = studyData.topics.find(t=>t.id===currentTopicId);
+  if(!topic){ appendMsg("Pick a topic first.",'bot'); return; }
+  if(mode==='flash') showFlash(topic);
+  else if(mode==='mcq') showMCQ(topic);
+  else if(mode==='short') showShort();
+  else appendMsg("In Ask mode, type a question below and press <b>Send</b>.",'bot');
+}
+
+showAnsBtn.onclick = ()=>{
+  if(mode==='flash') showFlashAnswer();
+  else appendMsg("For MCQs, feedback appears as soon as you click an option. Use <b>Hint</b> if you want a nudge first.",'bot');
+}
+
+hintBtn.onclick = ()=>{
+  if(mode==='flash') flashHint();
+  else if(mode==='mcq') mcqHint();
+  else appendMsg("Hints are available in Flashcards or MCQ mode.",'bot');
+}
+
+resetBtn.onclick = ()=>{ index=0; clearCurrent(); appendMsg("Reset complete. Choose a mode and press <b>Next</b>.",'bot'); }
+
+sendBtn.onclick = handleUser;
+userInput.addEventListener('keydown',e=>{ if(e.key==='Enter') handleUser(); });
+function handleUser(){
+  const text = userInput.value.trim(); if(!text) return;
+  appendMsg(escapeHtml(text),'user'); userInput.value='';
+  if(mode==='ask')   return handleAsk(text);
+  if(mode==='short') return gradeShortAnswer(text);
+  appendMsg("Tip: use <b>Next</b> for the next item, or switch to Ask/Short Answer.",'bot');
+}
+
+/* Helpers */
+function escapeHtml(s){ return s.replace(/[&<>]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
 
 /* Help dialog */
 helpBtn.onclick = ()=> helpDlg.style.display='flex';
@@ -584,7 +636,8 @@ helpDlg.addEventListener('click',e=>{ if(e.target===helpDlg) helpDlg.style.displ
 (function init(){
   loadTopics();
   setPreview();
-  appendMsg("Hi! I’m your APUSH study buddy. Choose a topic and a mode, then press <b>Next</b>. I’ll keep feedback friendly and concise. 😊",'bot');
+  updateHintState();
+  appendMsg("Hi! I’m your APUSH study buddy. Choose a topic and mode, then press <b>Next</b>. Click <b>Hint</b> anytime for a clue. 😊",'bot');
   mode='flash';
 })();
 </script>
