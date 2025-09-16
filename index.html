@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>APUSH Study Chatbot — Up to the Bill of Rights</title>
+<style>
+:root{--bg:#f6f9fc;--card:#fff;--accent:#1769aa;--muted:#566574}
+*{box-sizing:border-box}
+body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:var(--bg); margin:0; padding:24px; color:#0b2540}
+.wrap{max-width:1100px;margin:0 auto}
+header{display:flex;gap:16px;align-items:center;margin-bottom:18px}
+h1{font-size:20px;margin:0}
+.subtitle{color:var(--muted);font-size:13px}
+.main{display:grid;grid-template-columns:360px 1fr;gap:16px}
+.panel{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(8,30,50,.06)}
+.modes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+button,.pill{background:var(--accent);color:#fff;border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+button.secondary{background:#e6eef6;color:#0b2540}
+.chat{height:62vh;overflow:auto;padding:12px;border-radius:8px;background:linear-gradient(180deg,#eef7ff,transparent)}
+.msg{margin:8px 0;max-width:78%}
+.bot{background:#fff;padding:10px;border-radius:10px}
+.user{align-self:flex-end;background:#dbeeff;padding:10px;border-radius:10px;margin-left:auto}
+.small{font-size:12px;color:var(--muted)}
+select,input[type="text"]{padding:8px;border-radius:8px;border:1px solid #d6e6f6}
+footer{margin-top:12px;display:flex;gap:8px}
+.controls{display:flex;gap:8px;align-items:center}
+.mcq button{display:block;width:100%;text-align:left;margin:6px 0;padding:10px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
+.correct{border-color:green;background:#e9fff0}
+.wrong{border-color:red;background:#fff0f0}
+.tag{background:#eef5fb;border-radius:6px;padding:6px 8px;font-size:12px;color:var(--accent);display:inline-block}
+kbd{background:#eef; padding:2px 6px; border-radius:6px; font-size:12px}
+.dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.28);padding:20px}
+.dialog .card{max-width:720px;background:#fff;border-radius:12px;padding:18px}
+.editor{font-family:monospace;font-size:12px;height:120px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed #d7e9fb;background:#fcfeff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>APUSH Study Chatbot — Content through the Bill of Rights</h1>
+      <div class="subtitle">Friendly, concise feedback — flashcards, AP-style MCQs, short answers, and Q&A.</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="tag">Exploration → Constitution & BoR</div>
+      <div class="small">Source-aligned: your slides/notes + AMSCO (Ch. 1–6). For review; not a replacement for reading.</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="panel">
+      <div class="small">Mode</div>
+      <div class="modes">
+        <button id="mode-flash">Flashcards</button>
+        <button id="mode-mcq">AP-style MCQ</button>
+        <button id="mode-short">Short Answer</button>
+        <button id="mode-ask">Ask the Bot</button>
+        <button id="helpBtn" class="secondary">Help</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="small">Choose Topic</div>
+        <select id="topicSelect" style="width:100%;margin-top:6px"></select>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button id="nextBtn">Next</button>
+        <button id="showAnsBtn">Show Answer</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="small">Study data (read-only preview)</div>
+        <div id="studyPreview" class="editor" style="height:100px"></div>
+        <div class="small" style="margin-top:6px">To customize later, ask your assistant to generate an editable JSON block and paste it here in a future version.</div>
+      </div>
+
+      <div class="small" style="margin-top:10px;line-height:1.4">
+        Tips: <kbd>Next</kbd> shows the next card/question. <kbd>Show Answer</kbd> reveals the answer/explanation. In Short Answer, type 2–4 concise sentences.
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="chat" id="chatArea" aria-live="polite"></div>
+      <footer>
+        <div style="flex:1">
+          <input id="userInput" type="text" placeholder="Type a short answer / question (Ask mode) or use Next →" style="width:100%"/>
+        </div>
+        <div class="controls">
+          <button id="sendBtn">Send</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<!-- Help dialog -->
+<div id="helpDlg" class="dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="card">
+    <h3 id="helpTitle" style="margin:0 0 8px">How to use this page</h3>
+    <ol style="margin:0 0 10px 18px;line-height:1.5">
+      <li><b>Flashcards</b>: Press <kbd>Next</kbd> for a term; <kbd>Show Answer</kbd> to reveal the definition + significance.</li>
+      <li><b>AP-style MCQ</b>: Press <kbd>Next</kbd>, pick A–E, get instant feedback and a short explanation.</li>
+      <li><b>Short Answer</b>: Press <kbd>Next</kbd> for a prompt; reply in 2–4 sentences. I’ll nudge with key points.</li>
+      <li><b>Ask the Bot</b>: Switch to Ask mode, type a question (e.g., “Why did Britain tax the colonies?”). I’ll answer briefly using this study bank.</li>
+      <li>Use the <b>Topic</b> menu to focus on a unit.</li>
+    </ol>
+    <div class="small">Built for concise practice. For deeper reading, see your AMSCO text and class notes.</div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button id="helpClose" class="secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================
+   STUDY DATA (Flashcards + MCQs)
+   Five topic buckets; ~60 flashcards + 50 MCQs total.
+   All content is paraphrased/aligned to your materials up through the Bill of Rights.
+   ============================ */
+
+const studyData = {
+  topics: [
+/* ---------- 1. Exploration & Colonization ---------- */
+{
+ id:"explore",
+ title:"Exploration & Colonization",
+ summary:"Spanish vs. British goals, Columbian Exchange, early settlements (Jamestown, Plymouth, Mass. Bay), key compacts and labor systems.",
+ flashcards:[
+  {q:"Columbian Exchange",a:"Two-way transfer of plants, animals, peoples (including enslaved Africans), microbes, and ideas between the Old and New Worlds after 1492; it reshaped diets, populations, and ecosystems."},
+  {q:"Spanish vs. English Colonization",a:"Spanish: crown-directed conquest, encomienda, conversion, extraction of wealth. English: mix of joint-stock/private ventures, settler colonies, more local self-rule and diverse economies."},
+  {q:"Encomienda System",a:"Spanish labor system granting colonists authority over Indigenous labor/tribute in return for 'protection' and Christianization; often abusive, replaced gradually by repartimiento and enslaved labor."},
+  {q:"Joint Stock Company",a:"Investment vehicle pooling capital/risk for colonial ventures (e.g., Virginia Company); enabled costly settlement attempts without sole crown financing."},
+  {q:"Jamestown (1607)",a:"First permanent English settlement; early starvation/disease, later stabilized with tobacco economy and House of Burgesses (1619)."},
+  {q:"John Smith",a:"Soldier-leader who imposed discipline ('he that will not work, shall not eat') and improved Jamestown’s survival in 1608–09."},
+  {q:"Plymouth Separatists",a:"English Separatists (Pilgrims) seeking religious freedom; established Plymouth (1620) with Mayflower Compact; modest growth, later absorbed by MBC."},
+  {q:"Mayflower Compact",a:"Agreement by Plymouth settlers to form a civil body politic and obey laws for the common good; an early step toward self-government."},
+  {q:"Massachusetts Bay Puritans",a:"Non-separating Puritans (1630) under John Winthrop; aimed to build a godly 'city upon a hill' with congregational churches and town meetings."},
+  {q:"Great Awakening (1730s–40s)",a:"Intercolonial religious revival (Edwards, Whitefield) stressing conversion experience and emotional piety; fostered new/old light split and challenged authority."},
+  {q:"Dominion of New England (1686–89)",a:"Crown consolidation of NE colonies under Andros to curb smuggling and assert control; collapsed after the Glorious Revolution."},
+  {q:"Salutary Neglect",a:"Long period of lax enforcement of imperial trade laws; allowed colonial self-rule to develop until tighter control after 1763."},
+  {q:"Navigation Acts",a:"Mercantilist trade laws directing colonial commerce through England on English ships; often evaded via smuggling."},
+  {q:"House of Burgesses",a:"Elected assembly in Virginia (1619); early example of English representative government in America."},
+  {q:"Town Meetings",a:"Local direct-democracy tradition in New England; citizens debated taxes, local laws, and governance."}
+ ],
+ mcqs:[
+  {q:"Which best describes the primary contrast between Spanish and English colonization in the 16th–17th centuries?",
+   choices:["Spanish relied on small family farms; English focused on mining","Spanish emphasized missionary work and extraction; English developed settler colonies and local assemblies","Both were crown-directed conquest states with identical labor systems","English colonies were uniformly Catholic","Spanish colonies were founded as joint-stock ventures"],
+   answer:1, expl:"Spanish priorities included conquest, conversion, and extraction (e.g., encomienda), while English settlements leaned toward settler societies and representative bodies."},
+  {q:"A major effect of the Columbian Exchange on Europe was",
+   choices:["Decline in population due to disease","Loss of access to markets","Introduction of calorie-rich crops like maize and potatoes","Collapse of mercantilism","Immediate abolition of serfdom"],
+   answer:2, expl:"New World staples supported European population growth."},
+  {q:"Which statement about Jamestown is most accurate?",
+   choices:["It prospered immediately due to gold deposits","It nearly failed until tobacco cultivation and stricter discipline improved survival","It was founded by religious Separatists","It was a crown colony from the start","It prohibited representative government"],
+   answer:1, expl:"Early crises gave way to a tobacco economy and the House of Burgesses (1619)."},
+  {q:"The Mayflower Compact is significant because it",
+   choices:["Created the first written national constitution","Established a theocracy","Provided a model of consent-based self-government among settlers","Outlawed indentured servitude","Guaranteed universal suffrage"],
+   answer:2, expl:"It bound settlers to laws created for the common good."},
+  {q:"Which term is most closely associated with Spain’s early colonial labor practices?",
+   choices:["Headright system","Encomienda","Proprietary grants","Yeoman farming","Factory towns"],
+   answer:1, expl:"Encomienda granted labor/tribute from Indigenous communities to Spanish holders."},
+  {q:"The Great Awakening most directly encouraged",
+   choices:["Greater deference to established clergy","Decline in religious participation","Intercolonial connections and challenges to traditional authority","A royal union of the colonies","Immediate separation of church and state"],
+   answer:2, expl:"It fostered new denominations and a spirit of questioning authority."},
+  {q:"‘Salutary neglect’ refers to",
+   choices:["Strict enforcement of trade regulations","Parliament’s indifference to colonial legislation allowing local autonomy","Colonial refusal to trade with Britain","Royal veto of all colonial laws","Colonial neutrality in European wars"],
+   answer:1, expl:"Loose enforcement let self-government grow until Britain tightened control post-1763."},
+  {q:"The Dominion of New England aimed primarily to",
+   choices:["Expand voting rights","Promote westward settlement","Centralize control and curb smuggling","Create a colonial parliament","Abolish mercantilism"],
+   answer:2, expl:"It consolidated colonies under Andros to enforce imperial policy."},
+  {q:"Town meetings in New England are best characterized as",
+   choices:["Appointed councils","Direct-democracy forums for local decisions","Royal courts","Mercantile boards","Church synods only"],
+   answer:1, expl:"They let residents vote on taxes and local rules."},
+  {q:"The House of Burgesses (1619) is notable for",
+   choices:["Codifying slavery for the first time","Establishing trial by jury","Being an early representative assembly in English America","Creating the Mayflower Compact","Banning tobacco"],
+   answer:2, expl:"It provided elective representation in Virginia."}
+ ]
+},
+
+/* ---------- 2. Colonial Society & Regions ---------- */
+{
+ id:"society",
+ title:"Colonial Society & Regions",
+ summary:"Regional economies and demography; labor systems; conflicts and awakenings shaping colonial identity.",
+ flashcards:[
+  {q:"Southern vs. Middle vs. New England Colonies",a:"South: plantations (tobacco, rice), enslaved labor; Middle: grains, diverse peoples/faiths; New England: mixed subsistence, towns, longer life expectancy."},
+  {q:"Indentured Servitude",a:"Laborers bound by contract for passage; common in early Chesapeake; eventual decline as slavery expands."},
+  {q:"Headright System",a:"Land grants (e.g., 50 acres) to attract settlers; benefitted planters who financed indentures."},
+  {q:"Bacon’s Rebellion (1676)",a:"Frontier revolt in Virginia driven by land/Native policy frustrations; hastened shift toward race-based chattel slavery."},
+  {q:"Salem Witchcraft Trials (1692)",a:"Mass hysteria in Massachusetts; reflect social/religious tensions; led to skepticism of spectral evidence."},
+  {q:"Triangular Trade",a:"Transatlantic exchange linking Europe, Africa, and the Americas; included enslaved people, raw materials, and manufactured goods."},
+  {q:"Mercantilism",a:"Economic theory: colonies supply raw materials and buy finished goods; aim to accumulate wealth and favorable balance of trade."},
+  {q:"Act of Toleration (MD, 1649)",a:"Protected Trinitarian Christians in Maryland; an early experiment in limited religious toleration."},
+  {q:"Quakers in Pennsylvania",a:"Pacifist, egalitarian sect; founded by William Penn; promoted tolerance and fair dealings with Natives."},
+  {q:"Great Awakening (recap)",a:"Revival movement emphasizing personal conversion; reshaped colonial religious landscape."}
+ ],
+ mcqs:[
+  {q:"Which region relied most on enslaved labor by the mid-1700s?",
+   choices:["New England","Middle Colonies","Southern Colonies","Backcountry only","All equally"],
+   answer:2, expl:"Plantation agriculture in the South demanded intensive labor."},
+  {q:"Bacon’s Rebellion contributed to which trend in Virginia?",
+   choices:["Greater use of indentured servants","Shift toward increased reliance on enslaved Africans","End of plantation agriculture","Rise of town meetings","Expansion of fur trade"],
+   answer:1, expl:"Elites saw enslaved labor as more 'controllable' than indentured servants."},
+  {q:"The headright system primarily",
+   choices:["Distributed land to enslaved people","Granted land to investors/planters for importing laborers","Reserved western lands for Natives","Created proprietary colonies","Funded public schools"],
+   answer:1, expl:"It incentivized migration and rewarded sponsors with land."},
+  {q:"Which colony is most associated with Quaker toleration?",
+   choices:["Virginia","Massachusetts Bay","Pennsylvania","South Carolina","New York"],
+   answer:2, expl:"William Penn’s 'holy experiment' promoted toleration."},
+  {q:"A key consequence of the Salem trials was",
+   choices:["Greater trust in spectral evidence","Expansion of theocracy","Growing skepticism toward accusations and reforms in legal standards","Imposition of royal rule","Immediate abolition of the clergy"],
+   answer:2, expl:"Public regret followed; evidentiary standards tightened."},
+  {q:"Mercantilism envisioned colonies as",
+   choices:["Independent equals in trade","Sources of raw materials and markets for finished goods","Places to experiment with free trade","Military bases only","Tax-free zones"],
+   answer:1, expl:"Colonies supported the mother country’s wealth."},
+  {q:"Triangular trade involved",
+   choices:["Only Europe and the Americas","Europe, Africa, and the Americas in interconnected exchanges","Asia and Oceania primarily","The Mediterranean exclusively","Colonial goods bypassing Britain by law"],
+   answer:1, expl:"It linked three major regions with different commodities, including enslaved labor."},
+  {q:"Compared to the Chesapeake, New England settlements",
+   choices:["Had shorter life expectancy","Were more male-dominated","Developed more towns and family-based communities","Depended more on plantation staples","Had less religious influence"],
+   answer:2, expl:"NE was more town-centered with longer life expectancy."},
+  {q:"Which statement about indentured servitude is accurate?",
+   choices:["It increased after 1700","It was the same as chattel slavery","It declined as enslaved labor expanded","It was illegal in the Chesapeake","It guaranteed land to servants at completion"],
+   answer:2, expl:"As slavery expanded, indentured labor waned."},
+  {q:"Maryland’s Act of Toleration (1649) applied to",
+   choices:["All faiths equally","Trinitarian Christians","Only Catholics","Only Protestants","Non-Christians primarily"],
+   answer:1, expl:"It protected Trinitarian Christians from persecution."}
+ ]
+},
+
+/* ---------- 3. Imperial Tensions → Revolution ---------- */
+{
+ id:"imperial",
+ title:"Imperial Tensions → Revolution",
+ summary:"French & Indian War, Pontiac’s Rebellion, British acts and colonial responses leading to independence.",
+ flashcards:[
+  {q:"French & Indian War (1754–63)",a:"North American theater of the Seven Years’ War; Britain’s costly victory led to new taxes and tighter control over colonies."},
+  {q:"Pontiac’s Rebellion (1763)",a:"Native uprising in the Great Lakes/Ohio region against British forts; helped prompt the Proclamation of 1763."},
+  {q:"Proclamation of 1763",a:"Line barring settlement west of the Appalachians; aimed to avoid frontier conflicts; angered colonists eager for land."},
+  {q:"Sugar Act (1764)",a:"Lowered the molasses tax but tightened enforcement and customs (incl. writs of assistance); signaled revenue focus."},
+  {q:"Currency Act (1764)",a:"Restricted colonial paper money; strained local economies and debtors."},
+  {q:"Stamp Act (1765)",a:"Direct tax on printed materials; provoked widespread protests, boycotts, and the Stamp Act Congress."},
+  {q:"Quartering Act (1765/1774)",a:"Required colonies to provide housing/supplies to British troops; seen as intrusion on local authority."},
+  {q:"Sons/Daughters of Liberty",a:"Grassroots protest groups using boycotts, persuasion, and sometimes intimidation to oppose taxes."},
+  {q:"Stamp Act Congress (1765)",a:"Intercolonial meeting petitioning repeal; coordinated non-importation."},
+  {q:"Declaratory Act (1766)",a:"Repealed Stamp Act but asserted Parliament’s authority to legislate for colonies 'in all cases whatsoever'."},
+  {q:"Townshend Acts (1767)",a:"Import duties on glass, lead, paint, paper, tea; revenue to pay royal officials; sparked boycotts and protests."},
+  {q:"Committees of Correspondence",a:"Local networks sharing news/strategy; built intercolonial unity."},
+  {q:"Gaspee Incident (1772)",a:"Rhode Islanders burned a British customs schooner; trials threatened to bypass colonial juries."},
+  {q:"Boston Massacre (1770)",a:"Confrontation leaving five colonists dead; used as propaganda to galvanize resistance."},
+  {q:"Tea Act (1773)",a:"Aimed to aid the British East India Company by cheap tea; colonists saw it as a trick to accept taxation."},
+  {q:"Boston Tea Party (1773)",a:"Sons of Liberty dumped tea; protest against taxation and monopoly."},
+  {q:"Intolerable/Coercive Acts (1774)",a:"Punitive laws closing Boston port, altering MA government, strengthening Quartering; also the Quebec Act; provoked unity."},
+  {q:"First Continental Congress (1774)",a:"Met to coordinate response; The Association urged non-importation, non-consumption, and non-exportation."},
+  {q:"Lexington & Concord (1775)",a:"'Shot heard ’round the world'—first battles; militia resisted British attempts to seize arms."},
+  {q:"Second Continental Congress (1775)",a:"Managed war effort; named Washington; later adopted the Declaration; sent the Olive Branch Petition."},
+  {q:"Olive Branch Petition (1775)",a:"Last-ditch appeal to the king for reconciliation; rejected."},
+  {q:"Common Sense (1776)",a:"Thomas Paine’s pamphlet powerfully arguing for independence and republicanism."},
+  {q:"Declaration of Rights & Grievances",a:"Colonial statement asserting rights and protesting taxation without representation."}
+ ],
+ mcqs:[
+  {q:"Which was a direct British response to frontier conflicts after 1763?",
+   choices:["Townshend Acts","Proclamation of 1763","Tea Act","Declaratory Act","Quebec Act"],
+   answer:1, expl:"The Proclamation sought to limit westward settlement and reduce conflict."},
+  {q:"The Sugar Act (1764) differed from earlier trade acts because it",
+   choices:["Raised the molasses tax dramatically","Ended vice-admiralty courts","Tightened enforcement while lowering the tax rate to raise revenue","Applied only to tea","Granted colonial assemblies new powers"],
+   answer:2, expl:"Enforcement and revenue intent alarmed colonists."},
+  {q:"The Stamp Act crisis led most immediately to",
+   choices:["Colonial acceptance of virtual representation","Disbanding of colonial assemblies","Intercolonial cooperation via the Stamp Act Congress and boycotts","French alliance","Repeal of the Townshend duties"],
+   answer:2, expl:"Coordinated resistance pressured Parliament."},
+  {q:"The Declaratory Act asserted that Parliament",
+   choices:["Would never tax again","Recognized colonial sovereignty","Had full power to legislate for the colonies","Would create a colonial parliament","Granted home rule to Massachusetts"],
+   answer:2, expl:"It claimed authority 'in all cases whatsoever.'"},
+  {q:"One British aim of the Townshend duties was to",
+   choices:["Reduce customs enforcement","Pay royal governors and judges from colonial revenues","Fund colonial militias","End smuggling courts","Support the French alliance"],
+   answer:1, expl:"Salaries from duties reduced colonial leverage over officials."},
+  {q:"The Boston Massacre is best understood as",
+   choices:["A planned colonial ambush","A minor street clash politicized as propaganda by patriots","A peaceful protest with no casualties","A French attack","A result of the Tea Act"],
+   answer:1, expl:"Patriot prints circulated a dramatic version to build opposition."},
+  {q:"The Tea Act angered colonists primarily because",
+   choices:["It raised the price of tea","It forced colonists to drink coffee","They saw it as a tactic to secure acceptance of Parliament’s taxation power","It repealed all other duties","It subsidized local merchants"],
+   answer:2, expl:"Cheap tea masked the principle of taxation without representation."},
+  {q:"The Intolerable Acts aimed chiefly to",
+   choices:["Reward Boston merchants","Punish Massachusetts and assert imperial control","Create a new colonial confederation","Reduce customs revenues","End slavery"],
+   answer:1, expl:"They closed Boston’s port and altered MA governance."},
+  {q:"The First Continental Congress adopted The Association to",
+   choices:["Raise taxes","Coordinate non-importation, non-consumption, and non-exportation","Declare immediate independence","Create a national army","Cede western lands"],
+   answer:1, expl:"Economic pressure was the strategy short of war."},
+  {q:"'The shot heard ’round the world' refers to",
+   choices:["The Boston Tea Party","Lexington & Concord","Bunker Hill","Saratoga","Yorktown"],
+   answer:1, expl:"The opening battles of the Revolution."},
+  {q:"Which document most effectively popularized independence in 1776?",
+   choices:["Olive Branch Petition","Declaratory Act","Common Sense","Quebec Act","Navigation Acts"],
+   answer:2, expl:"Paine’s pamphlet swayed public opinion."},
+  {q:"The Gaspee incident (1772) heightened tensions by",
+   choices:["Showing colonial sympathy for customs enforcement","Demonstrating colonial willingness to use violence and bypass local juries","Creating a royal pardon for smugglers","Triggering French intervention","Ending vice-admiralty courts"],
+   answer:1, expl:"Burning the schooner and threatened trials inflamed opinion."}
+ ]
+},
+
+/* ---------- 4. Revolution ---------- */
+{
+ id:"revolution",
+ title:"Revolution",
+ summary:"From independence to victory: Declaration, turning points, and the peace settlement.",
+ flashcards:[
+  {q:"Declaration of Independence (1776)",a:"Announced separation; listed grievances; asserted natural rights and government by consent."},
+  {q:"'Shot heard ’round the world'",a:"Poetic phrase for the first shots at Lexington & Concord, symbolizing global significance."},
+  {q:"Battle of Saratoga (1777)",a:"Turning point; American victory secured French alliance."},
+  {q:"Yorktown (1781)",a:"Combined Franco-American victory leading to British surrender of a major army under Cornwallis."},
+  {q:"Treaty of Paris (1783)",a:"Recognized U.S. independence; established boundaries to the Mississippi; addressed Loyalist claims and debts."},
+  {q:"Why colonists succeeded",a:"Home-field advantage, resilient political leadership, French aid, and British war weariness/logistical strain."},
+  {q:"British vs. Colonial Advantages",a:"Britain: navy, wealth, professional army. Colonists: leadership, defensive war, motivation, alliance potential."},
+  {q:"Committees of Correspondence (recap)",a:"Kept resistance coordinated; built an intercolonial network before and during war."},
+  {q:"Samuel Adams",a:"Patriot organizer and propagandist; key role in Committees and Boston resistance."},
+  {q:"Sons/Daughters of Liberty (recap)",a:"Grassroots groups that mobilized boycotts and protests; symbolized popular resistance."}
+ ],
+ mcqs:[
+  {q:"Which best explains the significance of Saratoga?",
+   choices:["It ended the war immediately","It convinced Spain to invade Canada","It brought France openly into the war on the American side","It led to the Intolerable Acts","It forced Washington to resign"],
+   answer:2, expl:"French alliance provided crucial naval and financial support."},
+  {q:"The Declaration of Independence rests primarily on which ideas?",
+   choices:["Divine right of kings","Natural rights and consent of the governed","Feudal obligations","Military law","Church supremacy"],
+   answer:1, expl:"It asserts inalienable rights and that governments derive powers from consent."},
+  {q:"At Yorktown, the Franco-American victory was enabled by",
+   choices:["French naval blockade and coordinated siege","A winter storm alone","British civil war","Canadian intervention","Spanish army leadership"],
+   answer:0, expl:"The French fleet bottled up Cornwallis while allied forces besieged."},
+  {q:"The Treaty of Paris (1783) did NOT",
+   choices:["Recognize U.S. independence","Set the Mississippi as a western boundary","Address Loyalist debts/claims","Grant U.S. Canada","Acknowledge American fishing rights (off Newfoundland)"],
+   answer:3, expl:"Canada remained British."},
+  {q:"Which factor most undermined British success?",
+   choices:["Unlimited support at home","Short supply lines","Logistical challenges, divided support at home, and vast distances","Unified British political strategy","Abundant loyalist recruitment everywhere"],
+   answer:2, expl:"Distance, strategy, and morale factors impeded Britain."},
+  {q:"Samuel Adams is best associated with",
+   choices:["Writing Common Sense","Negotiating the Treaty of Paris","Organizing Committees of Correspondence and protests","Commanding at Saratoga","Commanding the British army"],
+   answer:2, expl:"He mobilized resistance and communication."},
+  {q:"'Shot heard ’round the world' refers to",
+   choices:["Start of the French Revolution","Lexington & Concord opening shots","Bunker Hill charge","Saratoga artillery","Naval battle off Yorktown"],
+   answer:1, expl:"Symbolic start of the American Revolution."},
+  {q:"One reason the colonists prevailed was",
+   choices:["No need for foreign assistance","Large standing army from the start","French financial and naval aid, plus fighting a defensive war","Abolition of slavery during the war","Immediate unity among all colonies"],
+   answer:2, expl:"French aid and defensive strategy mattered greatly."},
+  {q:"The Declaration’s list of grievances served to",
+   choices:["Explain British constitutional law","Appeal to European powers and justify separation","Create a new tax code","Establish the Articles of Confederation","End hostilities at once"],
+   answer:1, expl:"It justified independence to domestic and foreign audiences."},
+  {q:"A key Patriot advantage in the war was",
+   choices:["Control of the seas","A large arms industry","Fighting on familiar ground with local support networks","Unlimited hard currency","Unified Native alliances"],
+   answer:2, expl:"Familiar terrain and local logistics aided the Patriots."}
+ ]
+},
+
+/* ---------- 5. Constitution & New Nation ---------- */
+{
+ id:"constitution",
+ title:"Constitution & New Nation",
+ summary:"Articles of Confederation’s limits; compromises; ratification; Bill of Rights.",
+ flashcards:[
+  {q:"Articles of Confederation",a:"First U.S. framework; weak central government—no taxing power, limited enforcement, one-house legislature."},
+  {q:"Northwest Ordinance (1787)",a:"Land policy creating a path from territory to statehood; banned slavery in the Northwest Territory; protected civil liberties; promoted education."},
+  {q:"Shays’ Rebellion (1786–87)",a:"Massachusetts farmers’ uprising over debts/taxes; highlighted national weakness and spurred calls to revise the Articles."},
+  {q:"Great (Connecticut) Compromise",a:"Bicameral Congress: equal representation in Senate; proportional in House."},
+  {q:"Three-Fifths Compromise",a:"Counted enslaved persons as 3/5 for representation and taxation; entrenched sectional tensions."},
+  {q:"Commerce/Slave Trade Compromise",a:"Allowed Congress to regulate commerce (no export taxes) and delayed any ban on the slave trade until 1808."},
+  {q:"Federalists vs. Anti-Federalists",a:"Federalists favored a stronger national government; Anti-Federalists feared centralized power and demanded a bill of rights."},
+  {q:"Key Ratification States (VA, MA, NY)",a:"Large/populous states whose support was crucial to legitimacy; won over by promised amendments/BoR."},
+  {q:"Bill of Rights (1791)",a:"First ten amendments protecting civil liberties (speech, press, religion, due process, etc.); helped secure ratification."},
+  {q:"Federalist Papers",a:"Essays (Hamilton, Madison, Jay) arguing for ratification; explained checks, balances, and extended republic."}
+ ],
+ mcqs:[
+  {q:"A central weakness of the Articles of Confederation was",
+   choices:["A too-powerful executive","No power to levy taxes or enforce laws effectively","A bicameral legislature","Overregulation of commerce","Judicial supremacy"],
+   answer:1, expl:"Congress lacked revenue and enforcement capacity."},
+  {q:"The Northwest Ordinance is significant for",
+   choices:["Expanding slavery","Creating a plan for admitting new states and banning slavery in the NW Territory","Giving all land to existing states","Creating the federal judiciary","Abolishing public education"],
+   answer:1, expl:"It set a model for territorial growth and restricted slavery there."},
+  {q:"Shays’ Rebellion suggested to many elites that",
+   choices:["The Articles were too strong","A stronger national government was needed to ensure order","Debt relief laws were unnecessary","A monarchy should be restored","The militia system was obsolete"],
+   answer:1, expl:"The uprising exposed national weakness in crisis response."},
+  {q:"The Great Compromise resolved disagreement over",
+   choices:["Slavery and trade","Representation of large vs. small states in Congress","The presidency term length","Judicial review","War powers"],
+   answer:1, expl:"It created a Senate with equal state votes and a House by population."},
+  {q:"The Three-Fifths Compromise affected",
+   choices:["Tariff policy only","Representation and direct taxation by counting a portion of enslaved populations","Only Senate seats","Only presidential elections","Western land policy"],
+   answer:1, expl:"It boosted Southern representation in the House and electoral college."},
+  {q:"Anti-Federalists argued chiefly that",
+   choices:["States were too strong","A bill of rights was unnecessary","The proposed Constitution threatened liberties and state authority","A monarchy was preferable","A national church was needed"],
+   answer:2, expl:"They demanded explicit protections and feared central power."},
+  {q:"The promise to add a Bill of Rights helped secure ratification in key states like",
+   choices:["Delaware and Rhode Island","Virginia, Massachusetts, and New York","Georgia and South Carolina","Vermont and Kentucky","Florida and Texas"],
+   answer:1, expl:"Support in populous states cemented legitimacy."},
+  {q:"Which statement about the Bill of Rights is accurate?",
+   choices:["It originally applied only to the states","It enumerated rights like speech, press, religion, due process","It abolished slavery","It created judicial review","It changed Senate elections to popular vote"],
+   answer:1, expl:"It protected core civil liberties; incorporation to states came much later."}
+ ]
+}
+]
+};
+
+/* ============================
+   Short-answer prompts (rotated)
+   ============================ */
+const shortPrompts = [
+ "In 2–4 sentences, explain how the French & Indian War set the stage for colonial resistance to British policies.",
+ "In 2–4 sentences, why did the Articles of Confederation prove inadequate, and how did the Constitution address two specific weaknesses?",
+ "In 2–4 sentences, compare Spanish and British motives and methods of colonization.",
+ "In 2–4 sentences, explain why 'Common Sense' was so influential in 1776.",
+ "In 2–4 sentences, identify two causes and two effects of the Intolerable Acts."
+];
+
+/* ============================
+   Light Q&A term dictionary (Ask mode)
+   ============================ */
+const terms = {
+ "columbian exchange":"Post-1492 transfers that reshaped diets, populations, and disease patterns across hemispheres.",
+ "encomienda":"Spanish system granting tribute/labor from Indigenous peoples; often abusive.",
+ "proclamation of 1763":"British line barring settlement west of the Appalachians; colonists resented limits.",
+ "stamp act":"(1765) Direct tax on printed items; boycotts and Stamp Act Congress pushed repeal.",
+ "townshend acts":"(1767) Import duties used to pay royal officials; triggered boycotts and tension.",
+ "tea act":"(1773) Cheap tea to rescue the BEIC; colonists opposed the principle of taxation.",
+ "intolerable acts":"(1774) Punished Massachusetts; closed Boston port; altered colonial governance.",
+ "common sense":"Paine’s pamphlet arguing plainly for independence and republicanism.",
+ "articles of confederation":"Weak central government—no taxing power; difficult to enforce laws.",
+ "northwest ordinance":"Territorial → statehood process; banned slavery in NW Territory; civil liberties.",
+ "great compromise":"Bicameral Congress: equal Senate; proportional House.",
+ "three-fifths compromise":"Counted enslaved persons for representation/taxation at 3/5.",
+ "bill of rights":"First ten amendments protecting key liberties; helped win ratification."
+};
+
+/* ============================
+   UI Logic
+   ============================ */
+const chat = document.getElementById('chatArea');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const topicSelect = document.getElementById('topicSelect');
+const modeFlash = document.getElementById('mode-flash');
+const modeMcq = document.getElementById('mode-mcq');
+const modeShort = document.getElementById('mode-short');
+const modeAsk = document.getElementById('mode-ask');
+const nextBtn = document.getElementById('nextBtn');
+const showAnsBtn = document.getElementById('showAnsBtn');
+const resetBtn = document.getElementById('resetBtn');
+const studyPreview = document.getElementById('studyPreview');
+const helpBtn = document.getElementById('helpBtn');
+const helpDlg = document.getElementById('helpDlg');
+const helpClose = document.getElementById('helpClose');
+
+let mode = 'flash';
+let currentTopicId = studyData.topics[0].id;
+let index = 0;
+let lastMCQ = null;
+let lastFlash = null;
+let lastShort = null;
+
+function appendMsg(html, who='bot'){
+  const div = document.createElement('div');
+  div.className = 'msg ' + (who==='bot'?'bot':'user');
+  div.innerHTML = html;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function loadTopics(){
+  topicSelect.innerHTML = '';
+  studyData.topics.forEach(t=>{
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.title;
+    topicSelect.appendChild(opt);
+  });
+  topicSelect.value = currentTopicId;
+}
+function setPreview(){
+  const meta = studyData.topics.map(t=>({topic:t.title, flashcards:t.flashcards.length, mcqs:t.mcqs.length}));
+  studyPreview.textContent = JSON.stringify(meta,null,2);
+}
+
+modeFlash.onclick = ()=>{ mode='flash'; index=0; appendMsg("Flashcards ready. Press <b>Next</b> for a term and <b>Show Answer</b> to reveal details.",'bot'); }
+modeMcq.onclick = ()=>{ mode='mcq'; index=0; appendMsg("AP-style MCQs loaded. Press <b>Next</b> and choose an answer for instant feedback.",'bot'); }
+modeShort.onclick = ()=>{ mode='short'; index=0; appendMsg("Short answers: I’ll prompt; you reply in 2–4 concise sentences.",'bot'); }
+modeAsk.onclick = ()=>{ mode='ask'; appendMsg("Ask mode: type a question (e.g., “Why did Britain tax the colonies?”). I’ll answer briefly from this study bank.",'bot'); }
+
+topicSelect.onchange = ()=>{ currentTopicId = topicSelect.value; index=0; appendMsg("Topic set to: <b>"+ studyData.topics.find(t=>t.id===currentTopicId).title+"</b>",'bot'); }
+
+nextBtn.onclick = ()=>{
+  const topic = studyData.topics.find(t=>t.id===currentTopicId);
+  if(!topic){ appendMsg("Pick a topic first.",'bot'); return; }
+  if(mode==='flash') showFlash(topic);
+  else if(mode==='mcq') showMCQ(topic);
+  else if(mode==='short') showShort();
+  else appendMsg("In Ask mode, type your question below and press <b>Send</b>.",'bot');
+}
+
+showAnsBtn.onclick = ()=>{
+  const topic = studyData.topics.find(t=>t.id===currentTopicId);
+  if(mode==='flash' && lastFlash){ appendMsg("<b>Answer:</b> "+lastFlash.a,'bot'); }
+  else if(mode==='mcq' && lastMCQ){ appendMsg("<b>Answer:</b> " + String.fromCharCode(65+lastMCQ.answer) + ". " + lastMCQ.choices[lastMCQ.answer] + "<br><em>Why:</em> " + lastMCQ.expl,'bot'); }
+  else appendMsg("Nothing to show yet — press <b>Next</b> first.",'bot');
+}
+
+resetBtn.onclick = ()=>{ index=0; appendMsg("Reset complete. Choose a mode and press <b>Next</b>.",'bot'); }
+
+sendBtn.onclick = handleUser;
+userInput.addEventListener('keydown',e=>{ if(e.key==='Enter') handleUser(); });
+
+function handleUser(){
+  const text = userInput.value.trim(); if(!text) return;
+  appendMsg(escapeHtml(text),'user'); userInput.value='';
+  if(mode==='ask'){ return handleAsk(text); }
+  if(mode==='short'){ return gradeShortAnswer(text); }
+  appendMsg("Tip: use <b>Next</b> for the next item, or switch to Ask/Short Answer.",'bot');
+}
+
+function showFlash(topic){
+  if(!topic.flashcards.length){ appendMsg("No flashcards in this topic.",'bot'); return; }
+  lastFlash = topic.flashcards[index % topic.flashcards.length];
+  appendMsg("<b>Flashcard</b><br>Term: "+escapeHtml(lastFlash.q),'bot');
+  index++;
+}
+function showMCQ(topic){
+  if(!topic.mcqs.length){ appendMsg("No MCQs in this topic.",'bot'); return; }
+  const q = topic.mcqs[index % topic.mcqs.length]; lastMCQ = q; index++;
+  let html = "<b>AP-style MCQ</b><div style='margin-top:6px'><em>"+escapeHtml(q.q)+"</em></div>";
+  q.choices.forEach((c,i)=>{ html += `<div class="mcq"><button data-i="${i}">${String.fromCharCode(65+i)}. ${escapeHtml(c)}</button></div>`; });
+  appendMsg(html,'bot');
+  // delegate clicks
+  setTimeout(()=>{
+    const buttons = chat.querySelectorAll('button[data-i]');
+    buttons.forEach(b=>{
+      if(b._bound) return; b._bound=true;
+      b.onclick = ()=>{ const choice = +b.getAttribute('data-i'); handleMCQAnswer(choice,q); };
+    });
+  },30);
+}
+function handleMCQAnswer(chosen,q){
+  const correct = q.answer;
+  if(chosen===correct){
+    appendMsg("<b>Correct.</b> "+escapeHtml(q.choices[correct])+" — "+escapeHtml(q.expl),'bot');
+  } else {
+    appendMsg("Not quite — you chose <b>"+String.fromCharCode(65+chosen)+"</b>. Best answer is <b>"+String.fromCharCode(65+correct)+". "+escapeHtml(q.choices[correct])+"</b>. "+escapeHtml(q.expl),'bot');
+  }
+}
+
+function showShort(){
+  lastShort = shortPrompts[index % shortPrompts.length]; index++;
+  appendMsg("<b>Short Answer Prompt</b><div style='margin-top:6px'>"+escapeHtml(lastShort)+"</div>",'bot');
+}
+function gradeShortAnswer(text){
+  const lower = text.toLowerCase();
+  let hits = 0;
+  if(lower.match(/tax|revenue|debt|finance/)) hits++;
+  if(lower.match(/weak central|no (power|ability) to tax|articles/)) hits++;
+  if(lower.match(/shays|rebellion|uprising/)) hits++;
+  if(lower.match(/natural rights|consent|republic|monarchy/)) hits++;
+  let msg = hits>=2
+   ? "Nice job — you included key ideas. For full credit, anchor with a concrete example (e.g., Shays’ Rebellion, no federal taxing power) and tie cause → effect."
+   : "You’re close. Mention specific causes/effects (e.g., war debts → taxes; Articles lacked taxing power → instability; Shays’ Rebellion showed weakness). Try again in 2–4 sentences.";
+  appendMsg(msg,'bot');
+}
+
+function handleAsk(text){
+  const q = text.toLowerCase();
+  // direct term match
+  for(const t in terms){ if(q.includes(t)){ appendMsg(terms[t],'bot'); return; } }
+  // fuzzy: search topic summaries/titles/flashcard terms
+  let best=null,scoreBest=0;
+  studyData.topics.forEach(t=>{
+    const blob = (t.summary+" "+t.title+" "+t.flashcards.map(f=>f.q+" "+f.a).join(" ")).toLowerCase();
+    let s=0; q.split(/\s+/).forEach(w=>{ if(w.length>3 && blob.includes(w)) s++; });
+    if(s>scoreBest){scoreBest=s; best=t;}
+  });
+  if(best && scoreBest>0){ appendMsg(best.summary+" If you’d like practice, switch to MCQ or Flashcards for this topic.",'bot'); }
+  else { appendMsg("I couldn’t find an exact match. Try asking about a specific term (e.g., 'Townshend Acts', 'Three-Fifths Compromise').",'bot'); }
+}
+
+function escapeHtml(s){ return s.replace(/[&<>]/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[ch])); }
+
+/* Help dialog */
+helpBtn.onclick = ()=> helpDlg.style.display='flex';
+helpClose.onclick = ()=> helpDlg.style.display='none';
+helpDlg.addEventListener('click',e=>{ if(e.target===helpDlg) helpDlg.style.display='none'; });
+
+/* Init */
+(function init(){
+  loadTopics();
+  setPreview();
+  appendMsg("Hi! I’m your APUSH study buddy. Choose a topic and a mode, then press <b>Next</b>. I’ll keep feedback friendly and concise. 😊",'bot');
+  mode='flash';
+})();
+</script>
+</body>
+</html>
